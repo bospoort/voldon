@@ -22,7 +22,6 @@ def get_donors():
 # Donations
 @app.post("/donations", response_model=Donation)
 def register_donation(donation: Donation):
-    # check if donor exists
     found = any(d.id == donation.donor_id for d in donors)
     if not found:
         raise HTTPException(status_code=404, detail="Donor not found")
@@ -41,12 +40,15 @@ def get_donations():
 # Distributions
 @app.post("/distributions", response_model=Distribution)
 def record_distribution(distribution: Distribution):
-    # check if donation exists
     donation = (d.id == distribution.donation_id for d in donations)
     if donation == None:
         raise HTTPException(status_code=404, detail="Donation not found.")
     
-    if donation.quantity < distribution.quantity: 
+    amount_left = donation.quantity
+    for existing_distribution in distributions:
+        if existing_distribution.donation_id == distribution.donation_id:
+            amount_left -= existing_distribution.quantity
+    if amount_left < distribution.quantity: 
         raise HTTPException(status_code=404, detail="Not enough of donation left to distribute.")
     
     if distribution.quantity <= 0: 

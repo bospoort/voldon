@@ -15,13 +15,11 @@ class Donor(BaseModel):
     last_name: str
     city: str
 
-
 class Donation(BaseModel):
     id: Optional[int] = None
     donor_id: int
     donation_type: DonationType
     quantity: float
-    distributed: float = 0.0
     date: date
 
 class Distribution(BaseModel):
@@ -29,3 +27,9 @@ class Distribution(BaseModel):
     donation_id: int
     quantity: float
     date: date
+
+class DonationStatus(BaseModel):
+    donation_id: int
+    donor_id: int
+    quantity: float
+    distributed: float = 0.0

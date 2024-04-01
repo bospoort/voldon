@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from typing import List
-from models import Donation, Distribution, Donor
+from models import *
 
 donations = []
 distributions = []
@@ -40,11 +40,12 @@ def get_donations():
 # Distributions
 @app.post("/distributions", response_model=Distribution)
 def record_distribution(distribution: Distribution):
-    donation = (d.id == distribution.donation_id for d in donations)
-    if donation == None:
+
+    matches = [d for d in donations if d.id == distribution.donation_id]
+    if matches == False:
         raise HTTPException(status_code=404, detail="Donation not found.")
     
-    amount_left = donation.quantity
+    amount_left = matches[0].quantity
     for existing_distribution in distributions:
         if existing_distribution.donation_id == distribution.donation_id:
             amount_left -= existing_distribution.quantity
@@ -54,27 +55,40 @@ def record_distribution(distribution: Distribution):
     if distribution.quantity <= 0: 
         raise HTTPException(status_code=404, detail="Invalid amount. Quantity needs to be more than 0.")
     
-    # adjust donation amount
-    donation.quantity -= distribution.quantity 
-    
     distribution.id = len(distributions) + 1
     distributions.append(distribution)
     return distribution
+
+def get_donation_status(donation):
+    matches = [dist for dist in distributions if dist.donation_id == donation.id]
+    total_distributed = sum(dist.quantity for dist in matches)
+    return DonationStatus(
+        donation_id=donation.id, 
+        donor_id=donation.donor_id,
+        quantity=donation.quantity,
+        distributed=donation.quantity-total_distributed
+    )
 
 # Reports
 @app.get("/reports/inventory", response_model=List[dict])
 def get_inventory_report():
     report = {}
     for donation in donations:
+        status = get_donation_status(donation)
         if str(donation.donation_type) in report:
-            report[str(donation.donation_type)] += donation.quantity
+            report[str(donation.donation_type)].append(status)
         else:
-            report[str(donation.donation_type)] = donation.quantity
-    for distribution in distributions:
-        if distribution.donation_type in report:
-            report[distribution.donation_type] -= distribution.quantity
-    return [{"type": k, "quantity": v} for k, v in report.items()]
+            report[str(donation.donation_type)] = [status]
 
+    result = []
+    for donation_type, donations_list in report.items():
+        donation_type_dict = {
+            "type": donation_type,
+            "donations": donations_list
+        }
+        result.append(donation_type_dict)
+
+    return result
 
 @app.get("/reports/donors/{donor_id}", response_model=List[dict])
 def get_donor_report(donor_id):

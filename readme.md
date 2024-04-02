@@ -39,12 +39,18 @@ Or you can run the test from Visual Studio Code by clicking the Erlenmeyer lab f
 
 ## Bootstrap the data
 
-There is a file `bootstrap_data.sh` that populates some data by running a few curl scripts. 
+There is a file `bootstrap_data.sh` (`bootstrap_data.bat` for Windows) that populates some data by running a few curl scripts. 
 It might be helpful to then interface with the Swagger UI. 
 Run this from the terminal:
 
 ```bash
 bash bootstrap_data.sh
+```
+
+or in a Windows command prompt:
+
+```
+bootstrap_data.bat
 ```
 
 
